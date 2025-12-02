@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         "ladder.png", "left.png", "leftrightblue.png", "leftrightyellow.png", "lever.png", "monster.png",
         "pedestaldown.png", "pedestalup.png", "pick.png", "portal.png", "quest.png", "right.png", "rock.png",
         "scale.png", "shear.png", "sign.png", "stone.png", "switch.png", "tent.png", "tombstone.png",
-        "twinkle.png", "up.png", "updownblue.png", "updownyellow.png", "wallgimmick.png"
+        "twinkle.png", "up.png", "updownblue.png", "updownyellow.png", "wallgimmick.png", "marker.webp"
     ];
 
     // Initialization
@@ -45,24 +45,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function createHeaders() {
-        for (let i = 1; i <= GRID_COLS; i++) {
+        // Columns: 1 to 7 (each covers 5 cells)
+        for (let i = 1; i <= 7; i++) {
             const el = document.createElement('div');
             el.className = 'col-header';
             el.textContent = i;
             colHeaders.appendChild(el);
         }
-        for (let i = 0; i < GRID_ROWS; i++) {
+        // Rows: A to F (each covers 5 cells)
+        const rowLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
+        for (let i = 0; i < 6; i++) {
             const el = document.createElement('div');
             el.className = 'row-header';
-            el.textContent = getRowLabel(i);
+            el.textContent = rowLabels[i];
             rowHeaders.appendChild(el);
         }
-    }
-
-    function getRowLabel(index) {
-        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        if (index < 26) return letters[index];
-        return "A" + letters[index - 26];
     }
 
     function createGrid() {
@@ -178,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
         gridContainer.addEventListener('mousedown', (e) => {
             if (e.target.classList.contains('v-wall') || e.target.classList.contains('h-wall')) {
                 state.isDrawing = true;
-                toggleWall(e.target);
+                toggleWall(e.target, e);
             }
         });
 
@@ -187,16 +184,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (state.tool === 'wall' || state.tool === 'eraser') {
                 if (e.target.classList.contains('v-wall') || e.target.classList.contains('h-wall')) {
-                    toggleWall(e.target);
+                    toggleWall(e.target, e);
                 }
             }
         });
     }
 
-    function toggleWall(el) {
+    function toggleWall(el, event) {
         const r = parseInt(el.dataset.r);
         const c = parseInt(el.dataset.c);
         const type = el.dataset.type;
+
+        // Deadzone check
+        if (event) {
+            const rect = el.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            const DEADZONE = 4; // pixels from edge
+
+            if (type === 'v') {
+                // Vertical wall: check top and bottom edges
+                if (y < DEADZONE || y > rect.height - DEADZONE) return;
+            } else if (type === 'h') {
+                // Horizontal wall: check left and right edges
+                if (x < DEADZONE || x > rect.width - DEADZONE) return;
+            }
+        }
 
         const isEraser = state.tool === 'eraser';
 
