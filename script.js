@@ -10,7 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
         grid: Array(GRID_ROWS).fill().map(() => Array(GRID_COLS).fill(null)), // Stores icon IDs
         vWalls: Array(GRID_ROWS).fill().map(() => Array(GRID_COLS + 1).fill(false)),
         hWalls: Array(GRID_ROWS + 1).fill().map(() => Array(GRID_COLS).fill(false)),
-        floors: Array(GRID_ROWS).fill().map(() => Array(GRID_COLS).fill(null)) // Stores color strings
+        floors: Array(GRID_ROWS).fill().map(() => Array(GRID_COLS).fill(null)), // Stores color strings
+        lastMouseX: 0,
+        lastMouseY: 0,
+        mouseHistory: [] // Stores {x, y, time}
     };
 
     // DOM Elements
@@ -172,6 +175,22 @@ document.addEventListener('DOMContentLoaded', () => {
             state.isDrawing = false;
         });
 
+        document.addEventListener('mousemove', (e) => {
+            state.lastMouseX = e.clientX;
+            state.lastMouseY = e.clientY;
+
+            // Add to history
+            const now = Date.now();
+            state.mouseHistory.push({ x: e.clientX, y: e.clientY, time: now });
+
+            // Keep only recent history (last 10 points or 100ms)
+            if (state.mouseHistory.length > 10) {
+                state.mouseHistory.shift();
+            }
+            // Also prune old points
+            state.mouseHistory = state.mouseHistory.filter(p => now - p.time < 150);
+        });
+
         gridContainer.addEventListener('mousedown', (e) => {
             if (e.target.classList.contains('v-wall') || e.target.classList.contains('h-wall')) {
                 state.isDrawing = true;
@@ -200,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const rect = el.getBoundingClientRect();
             const x = event.clientX - rect.left;
             const y = event.clientY - rect.top;
-            const DEADZONE = 4; // pixels from edge
+            const DEADZONE = -4; // pixels from edge
 
             if (type === 'v') {
                 // Vertical wall: check top and bottom edges
@@ -208,6 +227,23 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (type === 'h') {
                 // Horizontal wall: check left and right edges
                 if (x < DEADZONE || x > rect.width - DEADZONE) return;
+            }
+
+            // Axis locking with trajectory
+            if (state.isDrawing && state.tool === 'wall' && state.mouseHistory.length > 1) {
+                // Calculate total delta from history
+                const first = state.mouseHistory[0];
+                const last = state.mouseHistory[state.mouseHistory.length - 1];
+                const dx = Math.abs(last.x - first.x);
+                const dy = Math.abs(last.y - first.y);
+
+                // If moving significantly more in one direction, lock to that axis
+                // Using 1.5 factor for stronger locking
+                if (dx > dy * 1.5) { // Horizontal movement
+                    if (type === 'v') return; // Ignore vertical walls
+                } else if (dy > dx * 1.5) { // Vertical movement
+                    if (type === 'h') return; // Ignore horizontal walls
+                }
             }
         }
 
