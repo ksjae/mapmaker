@@ -30,8 +30,9 @@ body {
     background-color: var(--bg-dark);
     color: var(--text-main);
     font-family: 'Roboto Mono', monospace;
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
+    /* Changed from height: 100vh */
+    /* overflow: hidden; Removed to allow browser scrolling */
     display: flex;
     flex-direction: column;
 }
@@ -45,6 +46,8 @@ body {
     align-items: center;
     padding: 0 20px;
     box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
+    flex-shrink: 0;
+    /* Prevent header from shrinking */
 }
 
 .app-header h1 {
@@ -65,6 +68,8 @@ body {
     flex: 1;
     display: flex;
     overflow: hidden;
+    /* Keep internal scrolling for desktop default */
+    position: relative;
 }
 
 /* Grid Area */
@@ -218,6 +223,7 @@ body {
     border-left: 1px solid var(--grid-line);
     display: flex;
     flex-direction: column;
+    flex-shrink: 0;
 }
 
 .tabs {
@@ -368,4 +374,28 @@ body {
 
 .color-swatch.blue {
     background-color: #0000ff;
+}
+
+/* Media Queries for Responsiveness */
+@media (max-width: 768px) {
+    .main-content {
+        flex-direction: column;
+        overflow: visible;
+        /* Allow stacking */
+    }
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        border-left: none;
+        border-top: 1px solid var(--grid-line);
+        max-height: 400px;
+        /* Limit height on mobile */
+    }
+
+    .grid-wrapper {
+        height: 60vh;
+        /* Give grid some height */
+        min-height: 400px;
+    }
 }
